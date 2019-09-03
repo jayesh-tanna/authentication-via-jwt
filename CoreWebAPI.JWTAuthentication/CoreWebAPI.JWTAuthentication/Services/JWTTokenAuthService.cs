@@ -9,7 +9,6 @@ namespace CoreWebAPI.JWTAuthentication.Services
 {
     public class JWTTokenAuthService : IAuthService
     {
-        private string SecurityAlgorithm { get; }
         private int ExpiryInMinutes { get; }
         private string SecretKey { get; }
         private readonly IConfiguration configuration;
@@ -19,20 +18,19 @@ namespace CoreWebAPI.JWTAuthentication.Services
             this.configuration = configuration;
             SecretKey = this.configuration["JWTTokenService:SecretKey"];
             ExpiryInMinutes = Convert.ToInt32(this.configuration["JWTTokenService:ExpiryInMinutes"]);
-            SecurityAlgorithm = this.configuration["JWTTokenService:SecurityAlgorithm"];
         }
 
         public bool IsTokenValid(string token)
         {
             if (string.IsNullOrEmpty(token))
-                throw new ArgumentException("Given token is null or empty.");
+                return false;
 
-            TokenValidationParameters tokenValidationParameters = GetTokenValidationParameters();
+            TokenValidationParameters parameters = GetTokenValidationParameters();
 
-            JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             try
             {
-                ClaimsPrincipal tokenValid = jwtSecurityTokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
+                ClaimsPrincipal tokenValid = tokenHandler.ValidateToken(token, parameters, out SecurityToken validatedToken);
                 return true;
             }
             catch (Exception)
@@ -43,16 +41,16 @@ namespace CoreWebAPI.JWTAuthentication.Services
 
         public string GenerateToken(IEnumerable<Claim> claims)
         {
-            SecurityTokenDescriptor securityTokenDescriptor = new SecurityTokenDescriptor
+            SecurityTokenDescriptor tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(claims),
                 Expires = DateTime.UtcNow.AddMinutes(ExpiryInMinutes),
-                SigningCredentials = new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithm)
+                SigningCredentials = new SigningCredentials(GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256Signature)
             };
 
-            var jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
-            var securityToken = jwtSecurityTokenHandler.CreateToken(securityTokenDescriptor);
-            string token = jwtSecurityTokenHandler.WriteToken(securityToken);
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
+            string token = tokenHandler.WriteToken(securityToken);
 
             return token;
         }
@@ -62,12 +60,12 @@ namespace CoreWebAPI.JWTAuthentication.Services
             if (string.IsNullOrEmpty(token))
                 throw new ArgumentException("Invalid token");
 
-            TokenValidationParameters tokenValidationParameters = GetTokenValidationParameters();
+            TokenValidationParameters parameters = GetTokenValidationParameters();
 
-            JwtSecurityTokenHandler jwtSecurityTokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
             try
             {
-                ClaimsPrincipal tokenValid = jwtSecurityTokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken validatedToken);
+                ClaimsPrincipal tokenValid = tokenHandler.ValidateToken(token, parameters, out SecurityToken validatedToken);
                 return tokenValid.Claims;
             }
             catch (Exception ex)
