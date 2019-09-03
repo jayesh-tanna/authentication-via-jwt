@@ -1,2 +1,2 @@
-# authentication-via-jwttoken
-Authentication via JWT Token 
+# authentication-via-jwt
+Authentication via JWT 
