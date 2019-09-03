@@ -7,17 +7,17 @@ using System.Security.Claims;
 
 namespace CoreWebAPI.JWTAuthentication.Services
 {
-    public class JWTTokenAuthService : IAuthService
+    public class JWTAuthService : IAuthService
     {
         private int ExpiryInMinutes { get; }
         private string SecretKey { get; }
         private readonly IConfiguration configuration;
 
-        public JWTTokenAuthService(IConfiguration configuration)
+        public JWTAuthService(IConfiguration configuration)
         {
             this.configuration = configuration;
-            SecretKey = this.configuration["JWTTokenService:SecretKey"];
-            ExpiryInMinutes = Convert.ToInt32(this.configuration["JWTTokenService:ExpiryInMinutes"]);
+            SecretKey = this.configuration["JWTService:SecretKey"];
+            ExpiryInMinutes = Convert.ToInt32(this.configuration["JWTService:ExpiryInMinutes"]);
         }
 
         public bool IsTokenValid(string token)
