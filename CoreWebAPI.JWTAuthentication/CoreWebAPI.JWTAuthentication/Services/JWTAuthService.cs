@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 
 namespace CoreWebAPI.JWTAuthentication.Services
 {
@@ -18,25 +19,6 @@ namespace CoreWebAPI.JWTAuthentication.Services
             this.configuration = configuration;
             SecretKey = this.configuration["JWTService:SecretKey"];
             ExpiryInMinutes = Convert.ToInt32(this.configuration["JWTService:ExpiryInMinutes"]);
-        }
-
-        public bool IsTokenValid(string token)
-        {
-            if (string.IsNullOrEmpty(token))
-                return false;
-
-            TokenValidationParameters parameters = GetTokenValidationParameters();
-
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                ClaimsPrincipal tokenValid = tokenHandler.ValidateToken(token, parameters, out SecurityToken validatedToken);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
         }
 
         public string GenerateToken(IEnumerable<Claim> claims)
@@ -55,39 +37,10 @@ namespace CoreWebAPI.JWTAuthentication.Services
             return token;
         }
 
-        public IEnumerable<Claim> GetTokenClaims(string token)
-        {
-            if (string.IsNullOrEmpty(token))
-                throw new ArgumentException("Invalid token");
-
-            TokenValidationParameters parameters = GetTokenValidationParameters();
-
-            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
-            try
-            {
-                ClaimsPrincipal tokenValid = tokenHandler.ValidateToken(token, parameters, out SecurityToken validatedToken);
-                return tokenValid.Claims;
-            }
-            catch (Exception ex)
-            {
-                throw ex;
-            }
-        }
-
         private SecurityKey GetSymmetricSecurityKey()
         {
-            byte[] symmetricKey = Convert.FromBase64String(SecretKey);
+            byte[] symmetricKey = Encoding.ASCII.GetBytes(SecretKey);
             return new SymmetricSecurityKey(symmetricKey);
-        }
-
-        private TokenValidationParameters GetTokenValidationParameters()
-        {
-            return new TokenValidationParameters()
-            {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                IssuerSigningKey = GetSymmetricSecurityKey()
-            };
         }
     }
 }

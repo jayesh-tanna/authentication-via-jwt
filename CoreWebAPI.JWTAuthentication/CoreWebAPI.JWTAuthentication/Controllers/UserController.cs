@@ -1,5 +1,6 @@
 ﻿using CoreWebAPI.JWTAuthentication.Models;
 using CoreWebAPI.JWTAuthentication.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,37 +10,38 @@ using System.Security.Claims;
 namespace CoreWebAPI.JWTAuthentication.Controllers
 {
     [Route("api/[controller]")]
+    [Authorize]
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IAuthService authService;
+        private readonly IAuthService _authService;
+        private readonly IUserService _userService;
 
-        public UserController(IAuthService authService)
+        public UserController(IAuthService authService, IUserService userService)
         {
-            this.authService = authService;
+            _authService = authService;
+            _userService = userService;
         }
 
         [Route("login")]
+        [AllowAnonymous]
         [HttpPost]
         public IActionResult Post([FromBody]User user)
         {
-            if ((user.LoginId == "abc" && user.Password == "abc") || (user.LoginId == "123" && user.Password == "123"))
-            {
-                var token = authService.GenerateToken(GetClaims(user.LoginId));
+            var result = _userService.List().FirstOrDefault(u => u.LoginId == user.LoginId && u.Password == user.Password);
 
-                return Ok(token);
-            }
-            return StatusCode((int)HttpStatusCode.Unauthorized);
+            if (result == null)
+                return StatusCode((int)HttpStatusCode.Unauthorized);
+
+            var token = _authService.GenerateToken(GetClaims(result.LoginId));
+
+            return Ok(token);
         }
 
-        [Route("getemail")]
-        public IActionResult Get(string token)
+        [Route("list")]
+        public IActionResult Get()
         {
-            if (!authService.IsTokenValid(token))
-                return StatusCode((int)HttpStatusCode.BadRequest);
-            var claims = authService.GetTokenClaims(token);
-            var emailId = claims.First().Value;
-            return Ok(emailId);
+            return Ok(_userService.List());
         }
 
         private static IEnumerable<Claim> GetClaims(string email)
